@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	isatty "github.com/mattn/go-isatty"
@@ -67,6 +69,15 @@ func main() {
 	}
 	defer termbox.Close()
 
+	// SIGTERM and SIGHUP quit the way a key does, so the terminal is put
+	// back instead of being left without echo (Asciiverse)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM, syscall.SIGHUP)
+	go func() {
+		<-signals
+		termbox.Interrupt()
+	}()
+
 	event_queue := make(chan termbox.Event)
 	go func() {
 		for {
@@ -83,7 +94,8 @@ loop:
 	for {
 		select {
 		case ev := <-event_queue:
-			if (ev.Type == termbox.EventKey && (ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyCtrlC || ev.Ch == 'q')) || ev.Type == termbox.EventInterrupt {
+			// Any key quits, not only Esc, Ctrl+C and q (Asciiverse)
+			if ev.Type == termbox.EventKey || ev.Type == termbox.EventInterrupt {
 				break loop
 			}
 		default:
