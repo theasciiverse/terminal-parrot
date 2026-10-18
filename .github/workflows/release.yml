@@ -1,0 +1,82 @@
+# Builds terminal-parrot for the Asciiverse catalog: one archive per
+# target, terminal-parrot-<target>.tar.gz (.zip on Windows), plus
+# SHA256SUMS, attached to a GitHub release (hub/catalog/SCHEMA.md,
+# release.source = "github"). Runs on a pushed tag of ours
+# (v<version>-av.<n>), or by hand for an existing tag. Upstream's own
+# workflows (goreleaser on every tag, a snap build) are removed; see
+# PATCHES.md.
+#
+# Pure Go with cgo off, so every binary is static and cross-built on one
+# Linux runner: Linux (named -musl, as av looks for a static build first),
+# macOS and Windows, x86-64 and ARM64 each.
+
+name: release
+
+on:
+  push:
+    tags: ["*-av.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "existing tag to build and release"
+        required: true
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  CGO_ENABLED: "0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Test
+        run: go vet ./... && go test ./...
+
+      - name: Build and package
+        run: |
+          sudo apt-get install -y -qq zip >/dev/null
+          mkdir -p dist
+          for spec in \
+            linux/amd64/x86_64-unknown-linux-musl \
+            linux/arm64/aarch64-unknown-linux-musl \
+            darwin/amd64/x86_64-apple-darwin \
+            darwin/arm64/aarch64-apple-darwin \
+            windows/amd64/x86_64-pc-windows-msvc \
+            windows/arm64/aarch64-pc-windows-msvc; do
+            goos=${spec%%/*}; rest=${spec#*/}; goarch=${rest%%/*}; target=${rest#*/}
+            exe=; [ "$goos" = windows ] && exe=.exe
+            rm -rf stage && mkdir stage
+            GOOS=$goos GOARCH=$goarch go build -trimpath -ldflags="-s -w" -o "stage/terminal-parrot$exe" .
+            cp LICENSE README.md PATCHES.md stage/
+            file "stage/terminal-parrot$exe"
+            if [ -n "$exe" ]; then
+              (cd stage && zip -qr "../dist/terminal-parrot-$target.zip" .)
+            else
+              tar -czf "dist/terminal-parrot-$target.tar.gz" -C stage .
+            fi
+          done
+          ls dist
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "terminal-parrot $TAG" \
+                 --notes "terminal-parrot ${TAG%%-av.*} from github.com/jmhobbs/terminal-parrot, John Hobbs' party parrot, built for the Asciiverse catalog. Changes from upstream: see PATCHES.md."
+          gh release upload "$TAG" dist/* -R "$GITHUB_REPOSITORY" --clobber

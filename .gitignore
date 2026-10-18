@@ -14,4 +14,5 @@ stage/
 /*_source.tar.bz2
 
 # Ignore windows executable files
-*.exe
+*.exeout/
+dist/
