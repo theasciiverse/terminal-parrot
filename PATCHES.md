@@ -35,6 +35,12 @@ Snap, and it is what the project is.
   SIGTERM ended it in raw mode and left the terminal without echo. They
   now interrupt the event loop and termbox closes as it does for a key
   (exit status 0).
+- **The parrot stands centred on the bottom row.** Upstream drew every
+  frame from the top left corner. Now the box that holds all the frames
+  is centred across the terminal with its last row on the terminal's
+  last row, the same box for every frame so the parrot keeps its own
+  bob, and it follows a resize. A terminal smaller than the parrot cuts
+  off the top and both sides evenly.
 
 ## Packaging
 
