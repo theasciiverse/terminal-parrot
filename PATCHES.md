@@ -63,3 +63,9 @@ av starts it as `terminal-parrot` with no arguments.
 - Windows: the x86-64 build run under Wine draws the parrot and quits on q
   with status 0.
 - macOS: built, not run.
+
+## Ours
+
+- **How to play it, at the top of README.md.** A short note on installing and
+  starting it with av, or from a release archive; the original text follows
+  unchanged.
