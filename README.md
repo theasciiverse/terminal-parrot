@@ -6,9 +6,6 @@
 > av play terminal-parrot
 > ```
 >
-> Or download the archive for your system from this repository's Releases,
-> unpack it and run `./terminal-parrot` (`terminal-parrot.exe` on Windows).
->
 > The original README follows.
 
 [![terminal-parrot](https://snapcraft.io/terminal-parrot/badge.svg)](https://snapcraft.io/terminal-parrot) [![🧪 Snap Builds](https://github.com/kz6fittycent/terminal-parrot/actions/workflows/test-snap-can-build.yml/badge.svg)](https://github.com/kz6fittycent/terminal-parrot/actions/workflows/test-snap-can-build.yml)
